@@ -1,4 +1,4 @@
-import { PrismaClient, DrillType, DrillStatus } from '@prisma/client';
+import { PrismaClient, DrillType } from '@prisma/client';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();

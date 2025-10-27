@@ -49,7 +49,7 @@ export class AuthService {
     const { accessToken, refreshToken } = this.generateTokens(user);
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     return {
       user: userWithoutPassword,
@@ -93,7 +93,7 @@ export class AuthService {
     const { accessToken, refreshToken } = this.generateTokens(user);
 
     // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     return {
       user: userWithoutPassword,
@@ -127,7 +127,7 @@ export class AuthService {
 
       const tokens = this.generateTokens(user);
       return tokens;
-    } catch (error) {
+    } catch (_error) {
       throw new AppError('Invalid refresh token', 401);
     }
   }
@@ -145,7 +145,7 @@ export class AuthService {
       throw new AppError('User not found', 404);
     }
 
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 

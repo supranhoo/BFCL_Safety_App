@@ -1,4 +1,4 @@
-import { PrismaClient, HazardCategory, RiskLevel, HazardStatus } from '@prisma/client';
+import { PrismaClient, HazardCategory, RiskLevel } from '@prisma/client';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();

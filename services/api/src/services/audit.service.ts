@@ -1,4 +1,4 @@
-import { PrismaClient, AuditType, AuditStatus } from '@prisma/client';
+import { PrismaClient, AuditType } from '@prisma/client';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();

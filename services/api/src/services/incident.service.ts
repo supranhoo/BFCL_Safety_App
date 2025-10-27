@@ -1,4 +1,4 @@
-import { PrismaClient, IncidentType, Severity, IncidentStatus } from '@prisma/client';
+import { PrismaClient, IncidentType, Severity } from '@prisma/client';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();

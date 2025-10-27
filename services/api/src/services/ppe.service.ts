@@ -1,4 +1,4 @@
-import { PrismaClient, PPECategory, PPEIssuanceStatus } from '@prisma/client';
+import { PrismaClient, PPECategory } from '@prisma/client';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();
