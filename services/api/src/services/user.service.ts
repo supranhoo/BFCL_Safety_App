@@ -194,13 +194,14 @@ export class UserService {
 
     // If updating email or username, check uniqueness
     if (data.email || data.username) {
+      const orConditions: any[] = [];
+      if (data.email) orConditions.push({ email: data.email });
+      if (data.username) orConditions.push({ username: data.username });
+
       const duplicateCheck = await prisma.user.findFirst({
         where: {
           id: { not: id },
-          OR: [
-            data.email ? { email: data.email } : {},
-            data.username ? { username: data.username } : {},
-          ],
+          OR: orConditions,
         },
       });
 

@@ -226,21 +226,23 @@ export class PPEService {
   }
 
   async getLowStockItems(threshold?: number) {
+    // Get all active items, then filter by stock vs reorder level
     const items = await prisma.pPEItem.findMany({
       where: {
         isActive: true,
-        stockQuantity: {
-          lte: threshold
-            ? threshold
-            : prisma.pPEItem.fields.reorderLevel,
-        },
       },
       orderBy: {
         stockQuantity: 'asc',
       },
     });
 
-    return items;
+    // Filter items where stock is at or below reorder level or custom threshold
+    const lowStockItems = items.filter((item) => {
+      const checkLevel = threshold !== undefined ? threshold : item.reorderLevel;
+      return item.stockQuantity <= checkLevel;
+    });
+
+    return lowStockItems;
   }
 
   async getCalibrationDue(days: number = 30) {
