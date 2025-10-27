@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bfcl-postgres
+    environment:
+      POSTGRES_DB: bfcl_safety
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bfcl-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build:
+      context: ./services/api
+      dockerfile: ../../infra/docker/Dockerfile.api
+    container_name: bfcl-api
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bfcl_safety?schema=public
+      JWT_SECRET: dev-secret-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/api:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bfcl-network
+    command: pnpm dev
+
+  # Web Application (Optional - for development)
+  # web:
+  #   build:
+  #     context: ./apps/web
+  #     dockerfile: ../../infra/docker/Dockerfile.web
+  #   container_name: bfcl-web
+  #   environment:
+  #     NODE_ENV: development
+  #     VITE_API_URL: http://localhost:3000
+  #   ports:
+  #     - "3001:3001"
+  #   volumes:
+  #     - ./apps/web:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - bfcl-network
+  #   command: pnpm dev
+
+  # Redis (for caching and sessions - optional)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: bfcl-redis
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - bfcl-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bfcl-network:
+    driver: bridge
