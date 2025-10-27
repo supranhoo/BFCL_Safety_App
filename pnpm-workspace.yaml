@@ -1,4 +1,11 @@
 packages:
-  - 'apps/*'
-  - 'services/*'
-  - 'packages/*'
+  - apps/*
+  - services/*
+  - packages/*
+
+ignoredBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - esbuild
+  - prisma
