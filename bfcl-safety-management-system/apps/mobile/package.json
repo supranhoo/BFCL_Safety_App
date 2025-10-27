@@ -1,0 +1,40 @@
+{
+  "name": "bfcl-safety-management-system-mobile",
+  "version": "1.0.0",
+  "description": "Mobile application for the BFCL Safety Management System.",
+  "main": "src/App.tsx",
+  "scripts": {
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "17.0.2",
+    "react-native": "0.66.4",
+    "react-navigation": "^5.14.9",
+    "axios": "^0.24.0",
+    "redux": "^4.1.2",
+    "react-redux": "^7.2.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/runtime": "^7.16.0",
+    "eslint": "^7.32.0",
+    "jest": "^27.4.5",
+    "react-test-renderer": "17.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bfcl-safety-management-system.git"
+  },
+  "keywords": [
+    "safety",
+    "management",
+    "mobile",
+    "react-native"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
