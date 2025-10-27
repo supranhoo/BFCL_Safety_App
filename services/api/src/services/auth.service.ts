@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();
@@ -182,16 +182,24 @@ export class AuthService {
       role: user.role.name,
     };
 
+    const signOptions: SignOptions = { 
+      expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any
+    };
+    
     const accessToken = jwt.sign(
       { ...payload, type: 'access' },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      signOptions
     );
 
+    const refreshOptions: SignOptions = {
+      expiresIn: '30d' as any
+    };
+    
     const refreshToken = jwt.sign(
       { id: user.id, type: 'refresh' },
       process.env.JWT_SECRET!,
-      { expiresIn: '30d' }
+      refreshOptions
     );
 
     return { accessToken, refreshToken };

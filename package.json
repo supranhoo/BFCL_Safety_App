@@ -22,9 +22,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.3",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.1.0",
-    "eslint": "^8.55.0"
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0",
