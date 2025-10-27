@@ -1,0 +1,798 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER MANAGEMENT ====================
+
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  username          String              @unique
+  password          String
+  firstName         String
+  lastName          String
+  phoneNumber       String?
+  employeeId        String?             @unique
+  roleId            String
+  role              Role                @relation(fields: [roleId], references: [id])
+  departmentId      String?
+  department        Department?         @relation(fields: [departmentId], references: [id])
+  isActive          Boolean             @default(true)
+  lastLogin         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  incidentsReported         Incident[]          @relation("IncidentReporter")
+  investigations            Investigation[]
+  hazardsReported           Hazard[]            @relation("HazardReporter")
+  auditsCreated             Audit[]             @relation("AuditCreator")
+  trainingAttendances       TrainingAttendance[]
+  certifications            Certification[]
+  ppeIssuances              PPEIssuance[]
+  mockDrillParticipations   MockDrillParticipant[]
+  correctiveActionsAssigned CorrectiveAction[]  @relation("AssignedTo")
+  correctiveActionsCreated  CorrectiveAction[]  @relation("CreatedBy")
+  notifications             Notification[]
+  auditLogs                 AuditLog[]
+  
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // Safety Head, ASM, Senior Safety Officer, etc.
+  description String?
+  permissions Json     // JSON array of permissions
+  level       Int      // Hierarchy level for approval routing
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  users User[]
+  
+  @@map("roles")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  headId    String?  // Department head user ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users     User[]
+  incidents Incident[]
+  hazards   Hazard[]
+  audits    Audit[]
+  
+  @@map("departments")
+}
+
+// ==================== INCIDENT MANAGEMENT ====================
+
+model Incident {
+  id                String            @id @default(uuid())
+  incidentNumber    String            @unique // Auto-generated: INC-YYYY-XXXX
+  reportedById      String
+  reportedBy        User              @relation("IncidentReporter", fields: [reportedById], references: [id])
+  reportedAt        DateTime          @default(now())
+  incidentDate      DateTime
+  incidentTime      String
+  location          String
+  geoLocation       String?           // Latitude,Longitude
+  departmentId      String?
+  department        Department?       @relation(fields: [departmentId], references: [id])
+  
+  // OSHA Compliance Fields
+  incidentType      IncidentType      // Injury, Illness, Near Miss, Property Damage
+  severity          Severity          // Low, Medium, High, Critical
+  injuryType        String?           // Cut, Burn, Fracture, etc.
+  bodyPartAffected  String?
+  witnessName       String?
+  witnessContact    String?
+  propertyDamage    Boolean           @default(false)
+  damageDescription String?
+  
+  // Description
+  description       String            @db.Text
+  immediateAction   String?           @db.Text
+  
+  // Status & Workflow
+  status            IncidentStatus    @default(DRAFT)
+  investigationRequired Boolean       @default(false)
+  
+  // Media
+  attachments       Attachment[]
+  
+  // Relations
+  investigation     Investigation?
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("incidents")
+}
+
+enum IncidentType {
+  INJURY
+  ILLNESS
+  NEAR_MISS
+  PROPERTY_DAMAGE
+  ENVIRONMENTAL
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  UNDER_INVESTIGATION
+  CLOSED
+}
+
+// ==================== INVESTIGATION ====================
+
+model Investigation {
+  id                  String              @id @default(uuid())
+  investigationNumber String              @unique // INV-YYYY-XXXX
+  incidentId          String              @unique
+  incident            Incident            @relation(fields: [incidentId], references: [id])
+  
+  investigatorId      String
+  investigator        User                @relation(fields: [investigatorId], references: [id])
+  investigationDate   DateTime
+  
+  // Co-investigators based on severity
+  coInvestigators     Json?               // Array of user IDs
+  
+  // Investigation Details
+  findings            String              @db.Text
+  rootCause           String              @db.Text
+  fiveWhys            Json?               // Structured 5-Why analysis
+  contributingFactors String?             @db.Text
+  recommendations     String?             @db.Text
+  
+  // Status
+  status              InvestigationStatus @default(DRAFT)
+  submittedAt         DateTime?
+  approvedAt          DateTime?
+  approvedBy          String?
+  
+  // Relations
+  correctiveActions   CorrectiveAction[]
+  attachments         Attachment[]
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  @@map("investigations")
+}
+
+enum InvestigationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  CLOSED
+}
+
+// ==================== CORRECTIVE ACTION (CAPA) ====================
+
+model CorrectiveAction {
+  id                String                @id @default(uuid())
+  capaNumber        String                @unique // CAPA-YYYY-XXXX
+  title             String
+  description       String                @db.Text
+  
+  // Source
+  sourceType        CAPASourceType        // Investigation, Audit, Hazard
+  sourceId          String                // ID of source entity
+  investigationId   String?
+  investigation     Investigation?        @relation(fields: [investigationId], references: [id])
+  auditId           String?
+  audit             Audit?                @relation(fields: [auditId], references: [id])
+  hazardId          String?
+  hazard            Hazard?               @relation(fields: [hazardId], references: [id])
+  
+  // Assignment
+  assignedToId      String
+  assignedTo        User                  @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdById       String
+  createdBy         User                  @relation("CreatedBy", fields: [createdById], references: [id])
+  dueDate           DateTime
+  
+  // Status & Priority
+  status            CAPAStatus            @default(PENDING)
+  priority          Priority              @default(MEDIUM)
+  
+  // Completion
+  completionDate    DateTime?
+  completionRemarks String?               @db.Text
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  
+  // Aging
+  ageDays           Int?                  // Calculated field for reporting
+  
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  @@map("corrective_actions")
+}
+
+enum CAPASourceType {
+  INVESTIGATION
+  AUDIT
+  HAZARD
+  MANUAL
+}
+
+enum CAPAStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  VERIFIED
+  OVERDUE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ==================== HAZARD IDENTIFICATION (HIRA) ====================
+
+model Hazard {
+  id                String            @id @default(uuid())
+  hazardNumber      String            @unique // HAZ-YYYY-XXXX
+  reportedById      String
+  reportedBy        User              @relation("HazardReporter", fields: [reportedById], references: [id])
+  reportedAt        DateTime          @default(now())
+  
+  location          String
+  geoLocation       String?
+  departmentId      String?
+  department        Department?       @relation(fields: [departmentId], references: [id])
+  
+  // Hazard Details
+  category          HazardCategory
+  description       String            @db.Text
+  potentialImpact   String            @db.Text
+  riskLevel         RiskLevel
+  
+  // Risk Assessment
+  likelihood        Int               // 1-5 scale
+  consequence       Int               // 1-5 scale
+  riskScore         Int               // likelihood * consequence
+  
+  // Control Measures
+  existingControls  String?           @db.Text
+  suggestedControls String?           @db.Text
+  
+  // Status
+  status            HazardStatus      @default(OPEN)
+  closedAt          DateTime?
+  closureRemarks    String?           @db.Text
+  
+  // Relations
+  correctiveActions CorrectiveAction[]
+  attachments       Attachment[]
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("hazards")
+}
+
+enum HazardCategory {
+  MECHANICAL
+  ELECTRICAL
+  CHEMICAL
+  BIOLOGICAL
+  ERGONOMIC
+  PHYSICAL
+  ENVIRONMENTAL
+  BEHAVIORAL
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  EXTREME
+}
+
+enum HazardStatus {
+  OPEN
+  UNDER_REVIEW
+  CONTROLS_IMPLEMENTED
+  CLOSED
+}
+
+// ==================== AUDIT & INSPECTION ====================
+
+model Audit {
+  id              String              @id @default(uuid())
+  auditNumber     String              @unique // AUD-YYYY-XXXX
+  title           String
+  auditType       AuditType
+  
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  
+  auditorId       String
+  auditor         User                @relation("AuditCreator", fields: [auditorId], references: [id])
+  
+  location        String
+  departmentId    String?
+  department      Department?         @relation(fields: [departmentId], references: [id])
+  
+  // Scope
+  scope           String              @db.Text
+  checklistId     String?
+  
+  // Results
+  status          AuditStatus         @default(SCHEDULED)
+  overallScore    Float?
+  passed          Boolean?
+  
+  findings        String?             @db.Text
+  nonConformances Int                 @default(0)
+  observations    Int                 @default(0)
+  
+  // Relations
+  auditItems      AuditItem[]
+  correctiveActions CorrectiveAction[]
+  attachments     Attachment[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@map("audits")
+}
+
+enum AuditType {
+  PPE_INSPECTION
+  FIVE_S
+  FIRE_SAFETY
+  ELECTRICAL_SAFETY
+  MACHINE_SAFETY
+  HOUSEKEEPING
+  INTERNAL_AUDIT
+  EXTERNAL_AUDIT
+  COMPLIANCE_CHECK
+}
+
+enum AuditStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  UNDER_REVIEW
+  CLOSED
+}
+
+model AuditItem {
+  id              String          @id @default(uuid())
+  auditId         String
+  audit           Audit           @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  
+  checkpointNumber String
+  checkpoint      String
+  category        String?
+  
+  status          AuditItemStatus
+  score           Float?
+  remarks         String?         @db.Text
+  
+  requiresAction  Boolean         @default(false)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("audit_items")
+}
+
+enum AuditItemStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  OBSERVATION
+  NOT_APPLICABLE
+}
+
+// ==================== TRAINING & CERTIFICATION ====================
+
+model TrainingProgram {
+  id              String              @id @default(uuid())
+  title           String
+  description     String              @db.Text
+  trainingType    TrainingType
+  duration        Int                 // in minutes
+  validityPeriod  Int?                // in days, for certifications
+  
+  // Content
+  syllabus        String?             @db.Text
+  videoUrl        String?
+  documentUrl     String?
+  
+  // Requirements
+  isMandatory     Boolean             @default(false)
+  targetRoles     Json?               // Array of role IDs
+  
+  // Quiz
+  hasQuiz         Boolean             @default(false)
+  passingScore    Int?                // Percentage
+  
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  trainingSessions TrainingSession[]
+  
+  @@map("training_programs")
+}
+
+enum TrainingType {
+  INDUCTION
+  REFRESHER
+  SKILL_BASED
+  COMPLIANCE
+  EMERGENCY_RESPONSE
+  EQUIPMENT_OPERATION
+}
+
+model TrainingSession {
+  id              String              @id @default(uuid())
+  sessionNumber   String              @unique // TRN-YYYY-XXXX
+  programId       String
+  program         TrainingProgram     @relation(fields: [programId], references: [id])
+  
+  scheduledDate   DateTime
+  startTime       String
+  endTime         String
+  location        String
+  
+  trainerId       String?             // External or internal
+  trainerName     String
+  
+  maxParticipants Int?
+  status          TrainingSessionStatus @default(SCHEDULED)
+  
+  completedAt     DateTime?
+  
+  attendances     TrainingAttendance[]
+  certifications  Certification[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@map("training_sessions")
+}
+
+enum TrainingSessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model TrainingAttendance {
+  id              String          @id @default(uuid())
+  sessionId       String
+  session         TrainingSession @relation(fields: [sessionId], references: [id])
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  
+  attended        Boolean         @default(false)
+  quizScore       Float?
+  passed          Boolean?
+  
+  remarks         String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@unique([sessionId, userId])
+  @@map("training_attendances")
+}
+
+model Certification {
+  id              String          @id @default(uuid())
+  certNumber      String          @unique // CERT-YYYY-XXXX
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  sessionId       String?
+  session         TrainingSession? @relation(fields: [sessionId], references: [id])
+  
+  title           String
+  issuedDate      DateTime        @default(now())
+  expiryDate      DateTime?
+  
+  certificateUrl  String?
+  
+  isValid         Boolean         @default(true)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("certifications")
+}
+
+// ==================== PPE MANAGEMENT ====================
+
+model PPEItem {
+  id              String          @id @default(uuid())
+  name            String
+  category        PPECategory
+  description     String?
+  
+  // Stock
+  stockQuantity   Int             @default(0)
+  reorderLevel    Int             @default(10)
+  unitPrice       Float?
+  
+  // Specifications
+  size            String?
+  manufacturer    String?
+  model           String?
+  
+  // Validity
+  hasExpiry       Boolean         @default(false)
+  shelfLife       Int?            // in days
+  
+  isActive        Boolean         @default(true)
+  
+  issuances       PPEIssuance[]
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("ppe_items")
+}
+
+enum PPECategory {
+  HEAD_PROTECTION
+  EYE_PROTECTION
+  HEARING_PROTECTION
+  RESPIRATORY_PROTECTION
+  HAND_PROTECTION
+  FOOT_PROTECTION
+  BODY_PROTECTION
+  FALL_PROTECTION
+  SAFETY_EQUIPMENT
+}
+
+model PPEIssuance {
+  id              String          @id @default(uuid())
+  issuanceNumber  String          @unique // PPE-YYYY-XXXX
+  
+  ppeItemId       String
+  ppeItem         PPEItem         @relation(fields: [ppeItemId], references: [id])
+  
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  
+  quantity        Int
+  issuedDate      DateTime        @default(now())
+  expiryDate      DateTime?
+  
+  returnDate      DateTime?
+  returnCondition String?
+  
+  status          PPEIssuanceStatus @default(ACTIVE)
+  
+  remarks         String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("ppe_issuances")
+}
+
+enum PPEIssuanceStatus {
+  ACTIVE
+  RETURNED
+  DAMAGED
+  LOST
+  EXPIRED
+}
+
+model AnalyzerCalibration {
+  id              String          @id @default(uuid())
+  equipmentName   String
+  equipmentId     String          @unique
+  
+  lastCalibration DateTime
+  nextCalibration DateTime
+  calibratedBy    String
+  
+  status          CalibrationStatus @default(VALID)
+  
+  certificateUrl  String?
+  remarks         String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("analyzer_calibrations")
+}
+
+enum CalibrationStatus {
+  VALID
+  DUE_SOON
+  OVERDUE
+  EXPIRED
+}
+
+// ==================== MOCK DRILLS & EMERGENCY ====================
+
+model MockDrill {
+  id              String              @id @default(uuid())
+  drillNumber     String              @unique // DRILL-YYYY-XXXX
+  drillType       DrillType
+  
+  scheduledDate   DateTime
+  startTime       String
+  endTime         String?
+  
+  location        String
+  scenario        String              @db.Text
+  
+  observers       Json                // Array of user IDs
+  
+  status          DrillStatus         @default(SCHEDULED)
+  
+  conductedDate   DateTime?
+  duration        Int?                // in minutes
+  
+  // Results
+  overallRating   Float?              // 1-10 scale
+  gaps            String?             @db.Text
+  observations    String?             @db.Text
+  recommendations String?             @db.Text
+  
+  participants    MockDrillParticipant[]
+  attachments     Attachment[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@map("mock_drills")
+}
+
+enum DrillType {
+  FIRE_DRILL
+  EARTHQUAKE_DRILL
+  CHEMICAL_SPILL
+  MEDICAL_EMERGENCY
+  EVACUATION
+  LOCKDOWN
+}
+
+enum DrillStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model MockDrillParticipant {
+  id              String          @id @default(uuid())
+  drillId         String
+  drill           MockDrill       @relation(fields: [drillId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  
+  attended        Boolean         @default(false)
+  performance     String?         // Good, Fair, Poor
+  remarks         String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@unique([drillId, userId])
+  @@map("mock_drill_participants")
+}
+
+// ==================== ATTACHMENTS ====================
+
+model Attachment {
+  id              String          @id @default(uuid())
+  fileName        String
+  fileUrl         String
+  fileType        String
+  fileSize        Int             // in bytes
+  
+  // Polymorphic relations
+  entityType      String          // Incident, Investigation, Hazard, etc.
+  entityId        String
+  
+  incidentId      String?
+  incident        Incident?       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  investigationId String?
+  investigation   Investigation?  @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  hazardId        String?
+  hazard          Hazard?         @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+  auditId         String?
+  audit           Audit?          @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  mockDrillId     String?
+  mockDrill       MockDrill?      @relation(fields: [mockDrillId], references: [id], onDelete: Cascade)
+  
+  uploadedAt      DateTime        @default(now())
+  
+  @@map("attachments")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id              String            @id @default(uuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  
+  title           String
+  message         String            @db.Text
+  type            NotificationType
+  
+  // Link to entity
+  entityType      String?
+  entityId        String?
+  
+  isRead          Boolean           @default(false)
+  readAt          DateTime?
+  
+  createdAt       DateTime          @default(now())
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INCIDENT_ASSIGNED
+  INVESTIGATION_REQUIRED
+  CAPA_ASSIGNED
+  CAPA_OVERDUE
+  TRAINING_SCHEDULED
+  CERTIFICATION_EXPIRING
+  AUDIT_SCHEDULED
+  DRILL_SCHEDULED
+  HAZARD_REPORTED
+  APPROVAL_REQUIRED
+  SYSTEM_ALERT
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id              String          @id @default(uuid())
+  userId          String?
+  user            User?           @relation(fields: [userId], references: [id])
+  
+  action          String          // CREATE, UPDATE, DELETE, LOGIN, etc.
+  resource        String          // incidents, users, etc.
+  resourceId      String?
+  
+  changes         Json?           // Before/after values
+  ipAddress       String?
+  userAgent       String?
+  
+  timestamp       DateTime        @default(now())
+  
+  @@map("audit_logs")
+}

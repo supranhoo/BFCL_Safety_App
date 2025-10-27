@@ -1,0 +1,2 @@
+-- Placeholder for migrations
+-- Run: pnpm db:migrate to generate migrations
