@@ -182,16 +182,19 @@ export class AuthService {
       role: user.role.name,
     };
 
+    const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
+    const jwtExpiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
+
     const accessToken = jwt.sign(
       { ...payload, type: 'access' },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret,
+      { expiresIn: jwtExpiresIn as string | number }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, type: 'refresh' },
-      process.env.JWT_SECRET!,
-      { expiresIn: '30d' }
+      jwtSecret,
+      { expiresIn: '30d' as string | number }
     );
 
     return { accessToken, refreshToken };

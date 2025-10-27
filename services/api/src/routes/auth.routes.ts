@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import {
   register,
   login,
@@ -11,7 +11,7 @@ import { authenticate } from '../middlewares/auth.middleware';
 import { strictRateLimiter } from '../middlewares/rateLimiter.middleware';
 import { auditLogger } from '../middlewares/audit.middleware';
 
-const router = Router();
+const router: RouterType = Router();
 
 // Public routes
 router.post('/register', strictRateLimiter, auditLogger('CREATE', 'user'), register);
