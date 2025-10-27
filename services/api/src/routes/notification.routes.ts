@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import {
   getUserNotifications,
   markAsRead,
@@ -7,7 +7,7 @@ import {
 } from '../controllers/notification.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 

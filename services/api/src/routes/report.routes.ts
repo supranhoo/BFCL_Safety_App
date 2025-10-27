@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import {
   getDashboard,
   getIncidentReport,
@@ -9,7 +9,7 @@ import {
 } from '../controllers/report.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 

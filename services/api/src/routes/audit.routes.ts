@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import {
   createAudit,
   getAllAudits,
@@ -10,7 +10,7 @@ import {
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { auditLogger } from '../middlewares/audit.middleware';
 
-const router = Router();
+const router: RouterType = Router();
 
 router.use(authenticate);
 
