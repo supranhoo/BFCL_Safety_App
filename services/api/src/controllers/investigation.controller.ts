@@ -1,7 +1,7 @@
 
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { InvestigationService } from '../services/investigation.service';
+import { InvestigationService, CreateInvestigationData } from '../services/investigation.service';
 import { AppError } from '../middlewares/error.middleware';
 import { z } from 'zod';
 
@@ -36,7 +36,7 @@ export const createInvestigation = async (req: AuthRequest, res: Response, next:
       {
         ...validatedData,
         investigationDate: new Date(validatedData.investigationDate),
-      },
+      } as CreateInvestigationData,
       req.user!.id
     );
     

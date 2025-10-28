@@ -5,7 +5,7 @@ import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();
 
-interface RegisterData {
+export interface RegisterData {
   email: string;
   username: string;
   password: string;
@@ -183,18 +183,18 @@ export class AuthService {
     };
 
     const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
-    const jwtExpiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
+    const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
     const accessToken = jwt.sign(
       { ...payload, type: 'access' },
       jwtSecret,
-      { expiresIn: jwtExpiresIn as string | number }
+      { expiresIn: jwtExpiresIn }
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, type: 'refresh' },
       jwtSecret,
-      { expiresIn: '30d' as string | number }
+      { expiresIn: '30d' }
     );
 
     return { accessToken, refreshToken };

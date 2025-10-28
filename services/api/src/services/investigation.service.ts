@@ -3,7 +3,7 @@ import { AppError } from '../middlewares/error.middleware';
 
 const prisma = new PrismaClient();
 
-interface CreateInvestigationData {
+export interface CreateInvestigationData {
   incidentId: string;
   investigatorId: string;
   investigationDate: Date;

@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { IncidentService } from '../services/incident.service';
+import { IncidentService, CreateIncidentData } from '../services/incident.service';
 import { AppError } from '../middlewares/error.middleware';
 import { z } from 'zod';
 
@@ -28,7 +28,7 @@ export const createIncident = async (req: AuthRequest, res: Response, next: Next
   try {
     if (!req.user) throw new AppError('User not authenticated', 401);
     
-    const validatedData = createIncidentSchema.parse(req.body);
+    const validatedData = createIncidentSchema.parse(req.body) as CreateIncidentData;
     const incident = await incidentService.create(validatedData, req.user.id);
     
     res.status(201).json(incident);

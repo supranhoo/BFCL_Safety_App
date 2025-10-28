@@ -19,6 +19,35 @@ export interface PaginatedIncidents {
   total: number;
 }
 
+export interface IncidentListParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  severity?: string;
+  incidentType?: string;
+  departmentId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface CreateIncidentData {
+  incidentDate: string;
+  incidentTime: string;
+  location: string;
+  geoLocation?: string;
+  departmentId?: string;
+  incidentType: 'INJURY' | 'ILLNESS' | 'NEAR_MISS' | 'PROPERTY_DAMAGE' | 'ENVIRONMENTAL';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  description: string;
+  witnessName?: string;
+  witnessContact?: string;
+  affectedPersonName?: string;
+  affectedPersonEmployeeId?: string;
+  injuryType?: string;
+  bodyPart?: string;
+  immediateAction?: string;
+}
+
 export const incidentsApi = {
   list: async (params?: IncidentListParams) => {
     const response = await apiClient.get('/incidents', { params });

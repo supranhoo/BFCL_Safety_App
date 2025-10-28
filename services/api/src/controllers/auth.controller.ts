@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/auth.service';
+import { AuthService, RegisterData } from '../services/auth.service';
 import { AppError } from '../middlewares/error.middleware';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { z } from 'zod';
@@ -31,7 +31,7 @@ const changePasswordSchema = z.object({
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = registerSchema.parse(req.body);
+    const validatedData = registerSchema.parse(req.body) as RegisterData;
     const result = await authService.register(validatedData);
     res.status(201).json(result);
   } catch (error) {
