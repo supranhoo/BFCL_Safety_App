@@ -63,8 +63,9 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-  logger.info(`🚀 BFCL Safety API running on port ${PORT}`);
+const port = Number(PORT);
+app.listen(port, '0.0.0.0', () => {
+  logger.info(`🚀 BFCL Safety API running on port ${port}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
 });
 
