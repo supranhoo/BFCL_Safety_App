@@ -25,6 +25,8 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+// Behind proxies (e.g., Codespaces, Docker, reverse proxies), trust proxy so rate limiter and IP extraction work correctly
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
