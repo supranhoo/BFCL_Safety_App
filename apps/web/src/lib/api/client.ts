@@ -27,6 +27,8 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.error('API Error:', error.message, error.response?.data);
+    
     const originalRequest = error.config;
 
     // If error is 401 and we haven't retried yet
@@ -44,11 +46,7 @@ apiClient.interceptors.response.use(
           refreshToken,
         });
 
-        // Backend returns tokens directly: { accessToken, refreshToken }
         const { accessToken } = response.data;
-        if (!accessToken) {
-          throw new Error('No access token in refresh response');
-        }
         localStorage.setItem('access_token', accessToken);
 
         // Retry the original request with new token

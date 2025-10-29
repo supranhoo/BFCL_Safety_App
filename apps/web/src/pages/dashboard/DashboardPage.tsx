@@ -1,20 +1,34 @@
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../lib/stores/auth.store';
+import { reportsApi, type DashboardData } from '../../lib/api/reports';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const stats = [
-    { name: 'Total Incidents', value: '24', change: '+12%', icon: '⚠️', color: 'bg-red-500' },
-    { name: 'Open CAPAs', value: '18', change: '+5%', icon: '📋', color: 'bg-orange-500' },
-    { name: 'Open Hazards', value: '12', change: '-8%', icon: '☢️', color: 'bg-yellow-500' },
-    { name: 'Active Users', value: '156', change: '+3%', icon: '👥', color: 'bg-green-500' },
-  ];
-
-  const recentIncidents = [
-    { id: 'INC-2025-0024', title: 'Slip and Fall in Production Area', severity: 'Medium', date: 'Oct 27, 2025' },
-    { id: 'INC-2025-0023', title: 'Chemical Spill in Lab', severity: 'High', date: 'Oct 26, 2025' },
-    { id: 'INC-2025-0022', title: 'Near Miss - Forklift Operation', severity: 'Low', date: 'Oct 25, 2025' },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const d = await reportsApi.getDashboard();
+        if (mounted) {
+          setData(d);
+          setError(null);
+        }
+      } catch (e: any) {
+        console.error('Failed to load dashboard', e?.response?.data || e?.message);
+        setError('Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -30,23 +44,18 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div
-            key={stat.name}
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                <p className="text-sm text-green-600 mt-2">{stat.change} from last month</p>
-              </div>
-              <div className={`${stat.color} h-12 w-12 rounded-lg flex items-center justify-center text-2xl`}>
-                {stat.icon}
-              </div>
-            </div>
-          </div>
-        ))}
+        {loading ? (
+          <div className="col-span-4 text-center text-gray-600">Loading dashboard…</div>
+        ) : error ? (
+          <div className="col-span-4 text-center text-red-600">{error}</div>
+        ) : data ? (
+          <>
+            <KpiCard name="Total Incidents" value={String(data.incidents.total)} icon="⚠️" color="bg-red-500" />
+            <KpiCard name="Open Incidents" value={String(data.incidents.open)} icon="🚧" color="bg-orange-500" />
+            <KpiCard name="Open CAPAs" value={String(data.capa.open)} icon="📋" color="bg-yellow-500" />
+            <KpiCard name="Open Hazards" value={String(data.hazards.open)} icon="☢️" color="bg-green-500" />
+          </>
+        ) : null}
       </div>
 
       {/* Two Column Layout */}
@@ -58,19 +67,19 @@ export default function DashboardPage() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {recentIncidents.map((incident) => (
+              {(data?.incidents.recent || []).map((incident) => (
                 <div
                   key={incident.id}
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                 >
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs font-mono text-gray-500">{incident.id}</span>
+                      <span className="text-xs font-mono text-gray-500">{incident.incidentNumber}</span>
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded ${
-                          incident.severity === 'High'
+                          incident.severity === 'HIGH'
                             ? 'bg-red-100 text-red-800'
-                            : incident.severity === 'Medium'
+                            : incident.severity === 'MEDIUM'
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}
@@ -78,8 +87,8 @@ export default function DashboardPage() {
                         {incident.severity}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900 mt-1">{incident.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">{incident.date}</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">{incident.description}</p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(incident.createdAt).toLocaleString()}</p>
                   </div>
                   <svg
                     className="h-5 w-5 text-gray-400"
@@ -153,6 +162,22 @@ export default function DashboardPage() {
             <div className="text-3xl mb-2">✅</div>
             <div className="text-sm font-medium text-gray-900">Schedule Audit</div>
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ name, value, icon, color }: { name: string; value: string; icon: string; color: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{name}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+        </div>
+        <div className={`${color} h-12 w-12 rounded-lg flex items-center justify-center text-2xl`}>
+          {icon}
         </div>
       </div>
     </div>

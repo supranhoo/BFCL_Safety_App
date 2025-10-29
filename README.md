@@ -106,10 +106,17 @@ bfcl-safety-management-system/
    pnpm db:migrate
    ```
 
-6. **Seed initial data** (optional)
+6. **Seed demo data** (recommended for development)
    ```bash
    pnpm db:seed
    ```
+   
+   This seeds the database with comprehensive demo data including users, incidents, hazards, CAPAs, and more.
+   See [Database Seeding Guide](services/api/SEEDING_GUIDE.md) for details.
+   
+   **Default Login Credentials:**
+   - Email: `admin@bfcl.com`
+   - Password: `Admin@123`
 
 ### Development
 
@@ -428,6 +435,7 @@ For issues and questions:
 
 ## 📚 Additional Resources
 
+- [Database Seeding Guide](./services/api/SEEDING_GUIDE.md)
 - [API Documentation](./docs/API.md)
 - [User Guide](./docs/USER_GUIDE.md)
 - [Admin Guide](./docs/ADMIN_GUIDE.md)
