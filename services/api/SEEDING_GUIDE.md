@@ -1,5 +1,7 @@
 # Database Seeding Guide
 
+⚠️ **IMPORTANT**: This seeding guide and script are designed exclusively for **development and testing environments**. Do NOT use in production!
+
 This guide explains how to seed the BFCL Safety Management System database with demo data for development and testing purposes.
 
 ## Quick Start
@@ -28,6 +30,8 @@ The seed script (`prisma/seed.ts`) populates the database with comprehensive dem
 - **Robert Martinez** - contractor1@bfcl.com (Contractor)
 
 **Default Password for all users:** `Admin@123`
+
+⚠️ **DEVELOPMENT ONLY**: These are weak test passwords. Never use these credentials in production!
 
 ### 2. Departments (5 departments)
 - Safety (SAF)
@@ -194,6 +198,10 @@ const users = [
 ### Error: Port already in use
 If you see "Port 3000 is already in use", kill the existing process:
 ```bash
+# First try graceful shutdown (SIGTERM)
+lsof -ti:3000 | xargs kill
+
+# If process doesn't stop, force kill (SIGKILL) as last resort
 lsof -ti:3000 | xargs kill -9
 ```
 
