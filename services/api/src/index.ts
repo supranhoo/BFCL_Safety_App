@@ -64,9 +64,18 @@ app.use(errorHandler);
 
 // Start server
 const port = Number(PORT);
-app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', () => {
   logger.info(`🚀 BFCL Safety API running on port ${port}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
+});
+
+server.on('error', (error: any) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`Port ${port} is already in use`);
+  } else {
+    logger.error(`Server error: ${error.message}`);
+  }
+  process.exit(1);
 });
 
 export default app;
